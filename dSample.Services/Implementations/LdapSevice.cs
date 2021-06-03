@@ -55,7 +55,6 @@ namespace dSample.Services.Implementations
 			{
 				_ldapConnection.SessionOptions.SecureSocketLayer = false;
 				_ldapConnection.SessionOptions.VerifyServerCertificate = (LdapConnection _, X509Certificate _) => true;
-				_ldapConnection.AuthType = AuthType.Negotiate;
 			}
 
 			_ldapConnection.Bind(networkCredentials);
@@ -83,6 +82,10 @@ namespace dSample.Services.Implementations
 				}
 				);
 			var result = (SearchResponse)_ldapConnection.SendRequest(request);
+			if (result.Entries.Count == 0)
+			{
+				return default;
+			}
 
 			var entry = result.Entries[0];
 			var user = new DomainUser()
