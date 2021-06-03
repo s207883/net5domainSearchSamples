@@ -21,7 +21,7 @@ namespace dSample.ConsoleView
 		{
 			ILdapSevice ldapService = new LdapSevice();
 			await ldapService.EstablishConnectionAsync("192.168.0.102", 389, "mydomain", "admin", "1234567890Abc");
-			var user = await ldapService.FindUserByNameAsync("user", "dc=mydomain,dc=local");
+			var user = await ldapService.FindUserByNameAsync("user2", "dc=mydomain,dc=local");
 
 			Console.WriteLine(new string('-',25));
 			Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(user));

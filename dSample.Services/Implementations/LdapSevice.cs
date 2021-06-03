@@ -14,6 +14,13 @@ namespace dSample.Services.Implementations
 	public class LdapSevice : IDisposable, ILdapSevice
 	{
 		private LdapConnection _ldapConnection;
+		private static readonly string[] _attributes = new[]
+				{
+					"sAMAccountName",
+					"displayName",
+					"mail",
+					"memberof",
+				};
 
 		public Task EstablishConnectionAsync(string domainUrl, int domainPort, string ldapUserDomain, string ldapUserName, string ldapUserPassword, bool disableSecurity = false)
 		{
@@ -70,21 +77,12 @@ namespace dSample.Services.Implementations
 				throw new ArgumentException($"'{nameof(userName)}' cannot be null or whitespace.", nameof(userName));
 			}
 			#endregion
-
-			var request = new SearchRequest(searchStartPosition, $"samaccountname={userName}", SearchScope.Subtree);
-			request.Attributes.AddRange(
-				new[]
-				{
-					"sAMAccountName",
-					"displayName",
-					"mail",
-					"memberof",
-				}
-				);
+			
+			var request = new SearchRequest(searchStartPosition, $"samaccountname={userName}", SearchScope.Subtree, _attributes);
 			var result = (SearchResponse)_ldapConnection.SendRequest(request);
-			if (result.Entries.Count == 0)
+			if (result.ResultCode != ResultCode.Success || result.Entries.Count == 0)
 			{
-				return default;
+				throw new LdapException("An error occured while searching user." + result.ErrorMessage);
 			}
 
 			var entry = result.Entries[0];
@@ -114,7 +112,7 @@ namespace dSample.Services.Implementations
 			#endregion
 
 			var attributes = searchResult.Attributes[attributeName];
-			if (attributes.Count == 0)
+			if (attributes == default || attributes.Count == 0)
 			{
 				return default;
 			}
@@ -138,6 +136,11 @@ namespace dSample.Services.Implementations
 			#endregion
 
 			var rawUserGroups = searchResult.Attributes[attributeName];
+			if (rawUserGroups == null || rawUserGroups.Count == 0)
+			{
+				return default;
+			}
+
 			var userGroups = new List<DomainGroup>();
 			foreach (var userGroup in rawUserGroups)
 			{
